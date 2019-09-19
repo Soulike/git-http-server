@@ -1,6 +1,6 @@
 import {router} from './Router';
 import Koa from 'koa';
-import signale from 'signale';
+import {SERVER} from '../CONFIG';
 import {Response} from '../Class';
 
 export const dispatcher = (app: Koa): Koa.Middleware =>
@@ -18,7 +18,7 @@ export const dispatcher = (app: Koa): Koa.Middleware =>
         catch (e)
         {
             ctx.response.body = new Response(false, '服务器错误');
-            signale.error(e);
+            SERVER.ERROR_LOGGER(e);
         }
     };
 };

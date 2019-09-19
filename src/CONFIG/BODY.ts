@@ -1,12 +1,12 @@
 import body from 'koa-body';
-import signale from 'signale';
 import {Response} from '../Class';
+import {SERVER} from './SERVER';
 
 export const BODY: body.IKoaBodyOptions = {
     multipart: true,
     onError: (err, ctx) =>
     {
-        signale.error(err);
+        SERVER.ERROR_LOGGER(err);
         ctx.response.body = new Response(false, '请求参数错误');
     },
 };
