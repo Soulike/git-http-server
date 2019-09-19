@@ -1,3 +1,3 @@
-# koa-template
+# git-http-server
 
-基于 koa 的快速开发框架。
+基于 koa 的 git http 服务端实现。

@@ -1,37 +1,34 @@
-import Koa from 'koa';
 import path from 'path';
-import send from 'koa-send';
-import {GIT} from '../CONFIG';
-import {HttpError} from 'http-errors';
+import {GIT, SERVER} from '../CONFIG';
 import {Response} from '../Class';
 import fs from 'fs';
 import {spawn} from 'child_process';
 import http from 'http';
 import {waitForEvent} from '../Function';
 
-export async function staticService(ctx: Koa.ParameterizedContext, repoPath: string, file: string): Promise<Response<void>>
+// 直接操纵 res 流
+export async function staticService(repoPath: string, file: string, res: http.ServerResponse): Promise<void>
 {
-    const filePath = path.join(repoPath, file);
-    try
+    return new Promise<void>(resolve =>
     {
-        await send(ctx, filePath, {
-            immutable: true,
-            hidden: true,
-            root: GIT.ROOT,
+        const filePath = path.join(repoPath, file);
+        const absoluteRepoPath = path.join(GIT.ROOT, filePath);
+        const readStream = fs.createReadStream(absoluteRepoPath);
+
+        readStream.on('error', e =>
+        {
+            res.statusCode = 404;
+            SERVER.WARNING_LOGGER(e);
+            return resolve();
         });
-        return new Response<void>(200);
-    }
-    catch (e)
-    {
-        if (e instanceof HttpError)
+
+        res.statusCode = 200;
+        readStream.pipe(res);
+        readStream.on('end', () =>
         {
-            return new Response<void>(e.statusCode, e.headers);
-        }
-        else
-        {
-            throw e;
-        }
-    }
+            return resolve();
+        });
+    });
 }
 
 export async function infoService(repoPath: string, service: string): Promise<Response<string | void>>

@@ -1,7 +1,7 @@
 {
-  "name": "koa-template",
+  "name": "git-http-server",
   "version": "0.1.0",
-  "description": "koa 快速编程框架",
+  "description": "基于 koa 的 git http 服务端实现",
   "main": "index.js",
   "author": "soulike",
   "license": "MIT",
