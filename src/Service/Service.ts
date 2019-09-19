@@ -44,7 +44,7 @@ export async function infoService(repoPath: string, service: string): Promise<Re
         return new Response<string | void>(404);
     }
 
-    const childProcess = spawn(`git ${service.slice(4)} --stateless-rpc --advertise-refs ${absoluteRepoPath}`, {
+    const childProcess = spawn(`LANG=en_US git ${service.slice(4)} --stateless-rpc --advertise-refs ${absoluteRepoPath}`, {
         shell: true,
     });
 
@@ -81,7 +81,7 @@ export async function commandService(repoPath: string, command: string, req: htt
         return;
     }
 
-    const childProcess = spawn(`git ${command} --stateless-rpc ${absoluteRepoPath}`, {
+    const childProcess = spawn(`LANG=en_US git ${command} --stateless-rpc ${absoluteRepoPath}`, {
         shell: true,
     });
     req.pipe(childProcess.stdin); // 把所有请求里的信息都以流的形式传送到 stdin

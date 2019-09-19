@@ -1,11 +1,12 @@
 import Router from '@koa/router';
 import {COMMAND, INFO, STATIC} from './ROUTE';
 import {commandService, infoService, staticService} from '../Service';
+import {auth} from '../Middleware';
 
 /*注意：默认没有启用 koa-body 进行解析。如果需要解析 body，将 koa-body 作为第二个参数传入即可*/
 export const dispatcher = (router: Router) =>
 {
-    router.get(STATIC, async (ctx, next) =>
+    router.get(STATIC, auth(), async (ctx, next) =>
     {
         try
         {
@@ -25,7 +26,7 @@ export const dispatcher = (router: Router) =>
         }
     });
 
-    router.get(INFO, async (ctx, next) =>
+    router.get(INFO, auth(), async (ctx, next) =>
     {
         try
         {
@@ -53,7 +54,7 @@ export const dispatcher = (router: Router) =>
         }
     });
 
-    router.post(COMMAND, async (ctx, next) =>
+    router.post(COMMAND, auth(), async (ctx, next) =>
     {
         try
         {
