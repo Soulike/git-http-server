@@ -7,6 +7,6 @@ export const BODY: body.IKoaBodyOptions = {
     onError: (err, ctx) =>
     {
         SERVER.ERROR_LOGGER(err);
-        ctx.response.body = new Response(false, '请求参数错误');
+        ctx.response.body = new Response(400);
     },
 };

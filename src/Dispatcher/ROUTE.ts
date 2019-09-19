@@ -1,5 +1,3 @@
-function prefix(url: string): string
-{
-    return `/server${url}`;
-}
-
+const STATIC = '/:repoPath/:file';
+const INFO = '/:repoPath/info/refs';
+const COMMAND = '/:repoPath/git-:command';

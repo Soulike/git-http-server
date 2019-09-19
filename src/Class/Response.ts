@@ -1,13 +1,13 @@
 export class Response<TBody>
 {
-    public isSuccessful: boolean;   // 本次请求是否成功
-    public message?: string;         // 请求失败时，显示给用户的消息
-    public data?: TBody;               // 请求成功时，前端需要的数据
+    public statusCode: number;
+    public headers?: { [key: string]: string };
+    public body?: TBody;
 
-    constructor(isSuccessful: boolean, message?: string, data?: TBody)
+    constructor(statusCode: number, headers?: { [p: string]: string }, body?: TBody)
     {
-        this.isSuccessful = isSuccessful;
-        this.message = message;
-        this.data = data;
+        this.statusCode = statusCode;
+        this.headers = headers;
+        this.body = body;
     }
 }
