@@ -1,3 +1,3 @@
-const STATIC = '/:repoPath/:file';
-const INFO = '/:repoPath/info/refs';
-const COMMAND = '/:repoPath/git-:command';
+export const STATIC = '/:repoPath/:file';
+export const INFO = '/:repoPath/info/refs';
+export const COMMAND = '/:repoPath/git-:command';

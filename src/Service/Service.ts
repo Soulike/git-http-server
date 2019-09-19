@@ -4,10 +4,10 @@ import send from 'koa-send';
 import {GIT} from '../CONFIG';
 import {HttpError} from 'http-errors';
 import {Response} from '../Class';
-import fs, {constants, promises as fsPromise} from 'fs';
-import {exec} from 'child_process';
-import {promisify} from 'util';
+import fs from 'fs';
+import {spawn} from 'child_process';
 import http from 'http';
+import {waitForEvent} from '../Function';
 
 export async function staticService(ctx: Koa.ParameterizedContext, repoPath: string, file: string): Promise<Response<void>>
 {
@@ -40,16 +40,26 @@ export async function infoService(repoPath: string, service: string): Promise<Re
     // 检查文件夹是否可读
     try
     {
-        await fsPromise.access(absoluteRepoPath, constants.R_OK);
+        await fs.promises.access(absoluteRepoPath, fs.constants.R_OK);
     }
     catch (e)
     {
         return new Response<string | void>(404);
     }
-    const execPromise = promisify(exec);
-    const {stdout} = await execPromise(`git ${service} --stateless-rpc --advertise-refs`, {
-        cwd: absoluteRepoPath,
+
+    const childProcess = spawn(`git ${service.slice(4)} --stateless-rpc --advertise-refs ${absoluteRepoPath}`, {
+        shell: true,
     });
+
+    // 读取子进程输出
+    let stdout = '';
+    childProcess.stdout.on('data', chunk =>
+    {
+        stdout += chunk;
+    });
+    // 等待子进程输出完成再进行下一步操作
+    await waitForEvent(childProcess.stdout, 'end');
+
     const header = {
         'content-type': `application/x-${service}-advertisement`,
     };
@@ -60,50 +70,35 @@ export async function infoService(repoPath: string, service: string): Promise<Re
 }
 
 // 由于需要处理可能的大量输入输出，因此需要直接手动操纵原始 req 对象，用流来实现
-export async function commandService(repoPath: string, command: string, req: http.IncomingMessage): Promise<Response<string | void>>
+export async function commandService(repoPath: string, command: string, req: http.IncomingMessage, res: http.ServerResponse): Promise<void>
 {
-    return new Promise<Response<string | void>>((resolve, reject) =>
+    const absoluteRepoPath = path.join(GIT.ROOT, repoPath);
+    // 检查文件夹是否可读
+    try
     {
-        const absoluteRepoPath = path.join(GIT.ROOT, repoPath);
-        // 检查文件夹是否可读
-        fs.access(absoluteRepoPath, constants.R_OK, err =>
-        {
-            if (err)
-            {
-                return resolve(new Response<string | void>(404));   // return 是为了让当前 Promise 结束运行
-            }
-        });
+        await fs.promises.access(absoluteRepoPath, fs.constants.R_OK);
+    }
+    catch (e)
+    {
+        res.statusCode = 404;   // 不可读就返回 404
+        return;
+    }
 
-        const child = exec(`git ${command} --stateless-rpc`, {
-            cwd: absoluteRepoPath,
-        });
-        req.pipe(child.stdin!); // 把所有请求里的信息都以流的形式传送到 stdin
-
-        // 输出以流的形式读取，并存储为字符串
-        let out = '';
-        child.stdout!.on('data', chunk =>
-        {
-            out += chunk;
-        });
-
-        child.stdout!.on('end', () =>
-        {
-            if (command === 'receive-pack')
-            {
-                exec(`git --git-dir ${absoluteRepoPath} update-server-info`);
-            }
-
-            return resolve(
-                new Response<string | void>(200,
-                    {
-                        'content-type': `application/x-git-${command}-result`,
-                    }, out),
-            );
-        });
-
-        child.stdout!.on('error', err =>
-        {
-            return reject(err);
-        });
+    const childProcess = spawn(`git ${command} --stateless-rpc ${absoluteRepoPath}`, {
+        shell: true,
     });
+    req.pipe(childProcess.stdin); // 把所有请求里的信息都以流的形式传送到 stdin
+    // 这里不需要等待输入流结束，因为输入不完成不可能产生输出
+
+    res.statusCode = 200;
+    res.setHeader('content-type', `application/x-git-${command}-result`);
+    // 输出以流的形式读取
+    childProcess.stdout.pipe(res);
+    await waitForEvent(childProcess.stdout, 'end'); // 等待子进程输出结束
+    if (command === 'receive-pack')
+    {
+        spawn(`git --git-dir ${absoluteRepoPath} update-server-info`, {
+            shell: true,
+        });
+    }
 }

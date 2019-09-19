@@ -1,7 +1,6 @@
 import {router} from './Router';
 import Koa from 'koa';
 import {SERVER} from '../CONFIG';
-import {Response} from '../Class';
 
 export const dispatcher = (app: Koa): Koa.Middleware =>
 {
@@ -17,7 +16,7 @@ export const dispatcher = (app: Koa): Koa.Middleware =>
         }
         catch (e)
         {
-            ctx.response.body = new Response(500);
+            ctx.response.status = 500;
             SERVER.ERROR_LOGGER(e);
         }
     };

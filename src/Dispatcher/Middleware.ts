@@ -66,13 +66,8 @@ export const commandMiddleware: Koa.Middleware = async (ctx, next) =>
         }
         else
         {
-            const {statusCode, headers, body} = await commandService(repoPath, command, ctx.req);
-            ctx.response.body = body;
-            ctx.response.status = statusCode;
-            if (headers !== undefined)
-            {
-                ctx.response.set(headers);
-            }
+            // 越过 koa 直接操纵请求和响应流
+            await commandService(repoPath, command, ctx.req, ctx.res);
         }
     }
     finally
