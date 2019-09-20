@@ -94,3 +94,35 @@ export async function commandService(absoluteRepoPath: string, command: string, 
         });
     }
 }
+
+export async function createRepoService(absoluteRepoPath: string): Promise<Response<void | string>>
+{
+    await fs.promises.mkdir(absoluteRepoPath, {recursive: true});
+    const folderContent = await fs.promises.readdir(absoluteRepoPath);
+    if (folderContent.length !== 0) // 如果文件夹不为空，那么不允许创建
+    {
+        return new Response<void | string>(403, {}, 'Repository has existed');
+    }
+
+    // 调用 git 初始化存储库
+    const childProcess = spawn('git init --bare', {
+        shell: true,
+        cwd: absoluteRepoPath,
+    });
+    await waitForEvent(childProcess, 'close');  // 等待子进程结束
+    return new Response<void>(204);
+}
+
+export async function deleteRepoService(absoluteRepoPath: string): Promise<Response<void | string>>
+{
+    try
+    {
+        await fs.promises.rmdir(absoluteRepoPath);
+        return new Response<void | string>(204);
+    }
+    catch (e)
+    {
+        SERVER.WARNING_LOGGER(e);
+        return new Response<void | string>(403, {}, 'Deleting repository failed.');
+    }
+}
