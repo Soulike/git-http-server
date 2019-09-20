@@ -1,5 +1,4 @@
-import path from 'path';
-import {GIT, SERVER} from '../CONFIG';
+import {SERVER} from '../CONFIG';
 import {Response} from '../Class';
 import fs from 'fs';
 import {spawn} from 'child_process';
@@ -7,12 +6,10 @@ import http from 'http';
 import {waitForEvent} from '../Function';
 
 // 直接操纵 res 流
-export async function staticService(repoPath: string, file: string, res: http.ServerResponse): Promise<void>
+export async function staticService(absoluteRepoPath: string, res: http.ServerResponse): Promise<void>
 {
     return new Promise<void>(resolve =>
     {
-        const filePath = path.join(repoPath, file);
-        const absoluteRepoPath = path.join(GIT.ROOT, filePath);
         const readStream = fs.createReadStream(absoluteRepoPath);
 
         readStream.on('error', e =>
@@ -31,9 +28,8 @@ export async function staticService(repoPath: string, file: string, res: http.Se
     });
 }
 
-export async function infoService(repoPath: string, service: string): Promise<Response<string | void>>
+export async function infoService(absoluteRepoPath: string, service: string): Promise<Response<string | void>>
 {
-    const absoluteRepoPath = path.join(GIT.ROOT, repoPath);
     // 检查文件夹是否可读
     try
     {
@@ -67,9 +63,8 @@ export async function infoService(repoPath: string, service: string): Promise<Re
 }
 
 // 由于需要处理可能的大量输入输出，因此需要直接手动操纵原始 req 对象，用流来实现
-export async function commandService(repoPath: string, command: string, req: http.IncomingMessage, res: http.ServerResponse): Promise<void>
+export async function commandService(absoluteRepoPath: string, command: string, req: http.IncomingMessage, res: http.ServerResponse): Promise<void>
 {
-    const absoluteRepoPath = path.join(GIT.ROOT, repoPath);
     // 检查文件夹是否可读
     try
     {

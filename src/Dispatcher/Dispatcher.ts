@@ -1,23 +1,25 @@
 import Router from '@koa/router';
 import {COMMAND, INFO, STATIC} from './ROUTE';
 import {commandService, infoService, staticService} from '../Service';
-import {auth} from '../Middleware';
+import path from 'path';
+import {GIT} from '../CONFIG';
 
 /*注意：默认没有启用 koa-body 进行解析。如果需要解析 body，将 koa-body 作为第二个参数传入即可*/
 export const dispatcher = (router: Router) =>
 {
-    router.get(STATIC, auth(), async (ctx, next) =>
+    router.get(STATIC, async (ctx, next) =>
     {
         try
         {
-            const {repoPath, file} = ctx.params;
-            if (typeof repoPath !== 'string' || typeof file !== 'string')
+            const {username, repo, file} = ctx.params;
+            if (typeof username !== 'string' || typeof repo !== 'string' || typeof file !== 'string')
             {
                 ctx.response.status = 400;
             }
             else
             {
-                await staticService(repoPath, file, ctx.res);
+                const absoluteFilePath = path.join(GIT.ROOT, username, repo, file);
+                await staticService(absoluteFilePath, ctx.res);
             }
         }
         finally
@@ -26,7 +28,7 @@ export const dispatcher = (router: Router) =>
         }
     });
 
-    router.get(INFO, auth(), async (ctx, next) =>
+    router.get(INFO, async (ctx, next) =>
     {
         try
         {
@@ -38,13 +40,21 @@ export const dispatcher = (router: Router) =>
             }
             else
             {
-                const {repoPath} = ctx.params;
-                const {statusCode, headers, body} = await infoService(repoPath, service);
-                ctx.response.body = body;
-                ctx.response.status = statusCode;
-                if (headers !== undefined)
+                const {username, repo} = ctx.params;
+                if (typeof username !== 'string' || typeof repo !== 'string')
                 {
-                    ctx.response.set(headers);
+                    ctx.response.status = 400;
+                }
+                else
+                {
+                    const absoluteRepoPath = path.join(GIT.ROOT, username, repo);
+                    const {statusCode, headers, body} = await infoService(absoluteRepoPath, service);
+                    ctx.response.body = body;
+                    ctx.response.status = statusCode;
+                    if (headers !== undefined)
+                    {
+                        ctx.response.set(headers);
+                    }
                 }
             }
         }
@@ -54,19 +64,20 @@ export const dispatcher = (router: Router) =>
         }
     });
 
-    router.post(COMMAND, auth(), async (ctx, next) =>
+    router.post(COMMAND, async (ctx, next) =>
     {
         try
         {
-            const {repoPath, command} = ctx.params;
-            if (typeof repoPath !== 'string' || typeof command !== 'string')
+            const {username, repo, command} = ctx.params;
+            if (typeof username !== 'string' || typeof repo !== 'string' || typeof command !== 'string')
             {
                 ctx.response.status = 400;
             }
             else
             {
+                const absoluteRepoPath = path.join(GIT.ROOT, username, repo);
                 // 越过 koa 直接操纵请求和响应流
-                await commandService(repoPath, command, ctx.req, ctx.res);
+                await commandService(absoluteRepoPath, command, ctx.req, ctx.res);
             }
         }
         finally
