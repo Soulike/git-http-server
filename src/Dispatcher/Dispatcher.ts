@@ -1,6 +1,6 @@
 import Router from '@koa/router';
-import {COMMAND, CREATE_REPO, INFO, STATIC} from './ROUTE';
-import {commandService, createRepoService, infoService, staticService} from '../Service';
+import {COMMAND, CREATE_REPO, DELETE_REPO, INFO, STATIC} from './ROUTE';
+import {commandService, createRepoService, deleteRepoService, infoService, staticService} from '../Service';
 import path from 'path';
 import {BODY, GIT} from '../CONFIG';
 import koaBody from 'koa-body';
@@ -105,6 +105,38 @@ export const dispatcher = (router: Router) =>
             {
                 const absoluteRepoPath = path.join(GIT.ROOT, username, `${repoName}.git`);
                 const {statusCode, headers, body} = await createRepoService(absoluteRepoPath);
+                ctx.response.body = body;
+                ctx.response.status = statusCode;
+                if (headers !== undefined)
+                {
+                    ctx.response.set(headers);
+                }
+            }
+        }
+        finally
+        {
+            await next();
+        }
+    });
+
+    router.post(DELETE_REPO, koaBody(BODY), async (ctx, next) =>
+    {
+        try
+        {
+            const {username} = ctx.session;
+            const {repoName} = ctx.request.body;
+            if (typeof username !== 'string')    // 没有登录
+            {
+                ctx.response.status = 403;
+            }
+            else if (typeof repoName !== 'string')   // 没有代码仓库名
+            {
+                ctx.response.status = 400;
+            }
+            else
+            {
+                const absoluteRepoPath = path.join(GIT.ROOT, username, `${repoName}.git`);
+                const {statusCode, headers, body} = await deleteRepoService(absoluteRepoPath);
                 ctx.response.body = body;
                 ctx.response.status = statusCode;
                 if (headers !== undefined)
