@@ -94,3 +94,19 @@ export async function commandService(absoluteRepoPath: string, command: string, 
         });
     }
 }
+
+export async function createRepoService(absoluteRepoPath: string): Promise<Response<void>>
+{
+    await fs.promises.mkdir(absoluteRepoPath, {recursive: true});
+    const folderContent = await fs.promises.readdir(absoluteRepoPath);
+    if (folderContent.length !== 0) // 如果文件夹不为空，那么不允许创建
+    {
+        return new Response<void>(403);
+    }
+    const childProcess = spawn('git init --bare', {
+        shell: true,
+        cwd: absoluteRepoPath,
+    });
+    await waitForEvent(childProcess, 'close');  // 等待子进程结束
+    return new Response<void>(200);
+}
