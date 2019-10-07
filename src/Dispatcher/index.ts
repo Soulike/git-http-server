@@ -1,23 +1,12 @@
 import router from './Router';
-import Koa from 'koa';
-import {SERVER} from '../CONFIG';
+import compose from 'koa-compose';
+import errorProcessor from './Middleware/ErrorProcessor';
 
-export default (app: Koa): Koa.Middleware =>
+export default () =>
 {
-    app
-        .use(router.routes())
-        .use(router.allowedMethods());
-
-    return async (ctx, next) =>
-    {
-        try
-        {
-            await next();
-        }
-        catch (e)
-        {
-            ctx.response.status = 500;
-            SERVER.ERROR_LOGGER(e);
-        }
-    };
+    return compose([
+        errorProcessor(),
+        router.routes(),
+        router.allowedMethods(),
+    ]);
 };

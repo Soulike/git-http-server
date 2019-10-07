@@ -4,13 +4,14 @@ import fs from 'fs';
 import {spawn} from 'child_process';
 import http from 'http';
 import {waitForEvent} from '../Function';
+import mime from 'mime-types';
 
 // 直接操纵 res 流
-export async function staticService(absoluteRepoPath: string, res: http.ServerResponse): Promise<void>
+export async function staticService(absoluteFilePath: string, res: http.ServerResponse): Promise<void>
 {
     return new Promise<void>(resolve =>
     {
-        const readStream = fs.createReadStream(absoluteRepoPath);
+        const readStream = fs.createReadStream(absoluteFilePath);
 
         readStream.on('error', e =>
         {
@@ -20,6 +21,8 @@ export async function staticService(absoluteRepoPath: string, res: http.ServerRe
         });
 
         res.statusCode = 200;
+        const type = mime.lookup(absoluteFilePath) || 'application/octet-stream';
+        res.setHeader('Content-Type', mime.contentType(type) || 'application/octet-stream');
         readStream.pipe(res);
         readStream.on('end', () =>
         {
@@ -50,11 +53,11 @@ export async function infoService(absoluteRepoPath: string, service: string): Pr
     {
         stdout += chunk;
     });
-    // 等待子进程输出完成再进行下一步操作
-    await waitForEvent(childProcess.stdout, 'end');
+    // 等待子进程运行结束再进行下一步操作
+    await waitForEvent(childProcess, 'exit');
 
     const header = {
-        'content-type': `application/x-${service}-advertisement`,
+        'Content-Type': `application/x-${service}-advertisement`,
     };
     const serverAdvert = `# service=${service}`;
     const length = serverAdvert.length + 4;
@@ -83,10 +86,10 @@ export async function commandService(absoluteRepoPath: string, command: string, 
     // 这里不需要等待输入流结束，因为输入不完成不可能产生输出
 
     res.statusCode = 200;
-    res.setHeader('content-type', `application/x-git-${command}-result`);
+    res.setHeader('Content-Type', `application/x-git-${command}-result`);
     // 输出以流的形式读取
     childProcess.stdout.pipe(res);
-    await waitForEvent(childProcess.stdout, 'end'); // 等待子进程输出结束
+    await waitForEvent(childProcess, 'exit'); // 等待子进程结束
     if (command === 'receive-pack')
     {
         spawn(`git --git-dir ${absoluteRepoPath} update-server-info`, {
