@@ -1,12 +1,12 @@
 import Router from '@koa/router';
-import {COMMAND, INFO, STATIC} from './ROUTE';
+import {COMMAND, REFS, STATIC} from './ROUTE';
 import {commandService, infoService, staticService} from '../Service';
 import path from 'path';
 import {GIT} from '../CONFIG';
 
 export default (router: Router) =>
 {
-    router.get(INFO, async (ctx) =>
+    router.get(REFS, async (ctx) =>
     {
         const {service} = ctx.request.query;
         if (typeof service !== 'string')
@@ -15,14 +15,14 @@ export default (router: Router) =>
         }
         else
         {
-            const {username, repo} = ctx.params;
-            if (typeof username !== 'string' || typeof repo !== 'string')
+            const {repositoryPath} = ctx.params;
+            if (typeof repositoryPath !== 'string')
             {
                 ctx.response.status = 400;
             }
             else
             {
-                const absoluteRepoPath = path.join(GIT.ROOT, username, repo);
+                const absoluteRepoPath = path.join(GIT.ROOT, repositoryPath);
                 const {statusCode, headers, body} = await infoService(absoluteRepoPath, service);
                 ctx.response.body = body;
                 ctx.response.status = statusCode;
@@ -36,14 +36,14 @@ export default (router: Router) =>
 
     router.post(COMMAND, async (ctx) =>
     {
-        const {username, repo, command} = ctx.params;
-        if (typeof username !== 'string' || typeof repo !== 'string' || typeof command !== 'string')
+        const {repositoryPath, command} = ctx.params;
+        if (typeof repositoryPath !== 'string' || typeof command !== 'string')
         {
             ctx.response.status = 400;
         }
         else
         {
-            const absoluteRepoPath = path.join(GIT.ROOT, username, repo);
+            const absoluteRepoPath = path.join(GIT.ROOT, repositoryPath);
             // 越过 koa 直接操纵请求和响应流
             await commandService(absoluteRepoPath, command, ctx.req, ctx.res);
         }
@@ -51,14 +51,14 @@ export default (router: Router) =>
 
     router.get(STATIC, async (ctx) =>
     {
-        const {username, repo, file} = ctx.params;
-        if (typeof username !== 'string' || typeof repo !== 'string' || typeof file !== 'string')
+        const {repositoryPath} = ctx.params;
+        if (typeof repositoryPath !== 'string')
         {
             ctx.response.status = 400;
         }
         else
         {
-            const absoluteFilePath = path.join(GIT.ROOT, username, repo, file);
+            const absoluteFilePath = path.join(GIT.ROOT, repositoryPath);
             await staticService(absoluteFilePath, ctx.res);
         }
     });
