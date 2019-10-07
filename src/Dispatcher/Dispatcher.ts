@@ -1,6 +1,6 @@
 import Router from '@koa/router';
 import {COMMAND, REFS, STATIC} from './ROUTE';
-import {commandService, infoService, staticService} from '../Service';
+import {commandService, refsService, staticService} from '../Service';
 import path from 'path';
 import {GIT} from '../CONFIG';
 
@@ -23,7 +23,7 @@ export default (router: Router) =>
             else
             {
                 const absoluteRepoPath = path.join(GIT.ROOT, repositoryPath);
-                const {statusCode, headers, body} = await infoService(absoluteRepoPath, service);
+                const {statusCode, headers, body} = await refsService(absoluteRepoPath, service);
                 ctx.response.body = body;
                 ctx.response.status = statusCode;
                 if (headers !== undefined)
@@ -51,14 +51,14 @@ export default (router: Router) =>
 
     router.get(STATIC, async (ctx) =>
     {
-        const {repositoryPath} = ctx.params;
-        if (typeof repositoryPath !== 'string')
+        const {filePath} = ctx.params;
+        if (typeof filePath !== 'string')
         {
             ctx.response.status = 400;
         }
         else
         {
-            const absoluteFilePath = path.join(GIT.ROOT, repositoryPath);
+            const absoluteFilePath = path.join(GIT.ROOT, filePath);
             await staticService(absoluteFilePath, ctx.res);
         }
     });

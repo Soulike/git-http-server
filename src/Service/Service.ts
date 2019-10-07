@@ -31,7 +31,7 @@ export async function staticService(absoluteFilePath: string, res: http.ServerRe
     });
 }
 
-export async function infoService(absoluteRepoPath: string, service: string): Promise<Response<string | void>>
+export async function refsService(absoluteRepoPath: string, service: string): Promise<Response<string | void>>
 {
     // 检查文件夹是否可读
     try
