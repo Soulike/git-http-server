@@ -1,5 +1,5 @@
 import Koa from 'koa';
-import {dispatcher} from './Dispatcher';
+import dispatcher from './Dispatcher';
 import {SERVER} from './CONFIG';
 
 const app = new Koa();

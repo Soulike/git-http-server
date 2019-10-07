@@ -4,8 +4,7 @@ import {commandService, infoService, staticService} from '../Service';
 import path from 'path';
 import {GIT} from '../CONFIG';
 
-/*注意：默认没有启用 koa-body 进行解析。如果需要解析 body，将 koa-body 作为第二个参数传入即可*/
-export const dispatcher = (router: Router) =>
+export default (router: Router) =>
 {
     router.get(STATIC, async (ctx, next) =>
     {

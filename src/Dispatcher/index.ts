@@ -1,8 +1,8 @@
-import {router} from './Router';
+import router from './Router';
 import Koa from 'koa';
 import {SERVER} from '../CONFIG';
 
-export const dispatcher = (app: Koa): Koa.Middleware =>
+export default (app: Koa): Koa.Middleware =>
 {
     app
         .use(router.routes())
