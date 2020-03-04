@@ -1,6 +1,6 @@
 import router from './Router';
 import compose from 'koa-compose';
-import errorProcessor from './Middleware/ErrorProcessor';
+import errorProcessor from './Middleware/errorHandler';
 
 export default () =>
 {

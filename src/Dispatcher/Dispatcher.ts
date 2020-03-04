@@ -1,12 +1,14 @@
 import Router from '@koa/router';
-import {COMMAND, REFS, STATIC} from './ROUTE';
-import {commandService, refsService, staticService} from '../Service';
+import {ADVERTISE, FILE, RPC} from './ROUTE';
 import path from 'path';
 import {GIT} from '../CONFIG';
+import * as Service from '../Service';
+import {Readable} from 'stream';
+import zlib from 'zlib';
 
 export default (router: Router) =>
 {
-    router.get(REFS, async (ctx) =>
+    router.get(ADVERTISE, async ctx =>
     {
         const {service} = ctx.request.query;
         if (typeof service !== 'string')
@@ -15,51 +17,39 @@ export default (router: Router) =>
         }
         else
         {
-            const {repositoryPath} = ctx.params;
-            if (typeof repositoryPath !== 'string')
-            {
-                ctx.response.status = 400;
-            }
-            else
-            {
-                const absoluteRepoPath = path.join(GIT.ROOT, repositoryPath);
-                const {statusCode, headers, body} = await refsService(absoluteRepoPath, service);
-                ctx.response.body = body;
-                ctx.response.status = statusCode;
-                if (headers !== undefined)
-                {
-                    ctx.response.set(headers);
-                }
-            }
+            const {0: repositoryName} = ctx.params;
+            const repositoryPath = path.join(GIT.ROOT, repositoryName);
+            const {statusCode, body, headers} = await Service.advertise(repositoryPath, service);
+            ctx.response.set(headers);
+            ctx.response.body = body;
+            ctx.response.status = statusCode;
         }
     });
 
-    router.post(COMMAND, async (ctx) =>
+    router.post(RPC, async ctx =>
     {
-        const {repositoryPath, command} = ctx.params;
-        if (typeof repositoryPath !== 'string' || typeof command !== 'string')
+        const {0: repositoryName, 1: command} = ctx.params;
+        let readableStream: Readable = ctx.req;
+        const {'content-encoding': contentEncoding} = ctx.request.headers;
+        if (contentEncoding === 'gzip')  // git 在大仓库可能会进行压缩
         {
-            ctx.response.status = 400;
+            const gunzip = zlib.createGunzip();
+            readableStream = ctx.req.pipe(gunzip);
         }
-        else
-        {
-            const absoluteRepoPath = path.join(GIT.ROOT, repositoryPath);
-            // 越过 koa 直接操纵请求和响应流
-            await commandService(absoluteRepoPath, command, ctx.req, ctx.res);
-        }
+        const repositoryPath = path.join(GIT.ROOT, repositoryName);
+        const {statusCode, body, headers} = await Service.rpc(repositoryPath, command, readableStream);
+        ctx.response.set(headers);
+        ctx.response.body = body;
+        ctx.response.status = statusCode;
     });
 
-    router.get(STATIC, async (ctx) =>
+    router.get(FILE, async ctx =>
     {
-        const {filePath} = ctx.params;
-        if (typeof filePath !== 'string')
-        {
-            ctx.response.status = 400;
-        }
-        else
-        {
-            const absoluteFilePath = path.join(GIT.ROOT, filePath);
-            await staticService(absoluteFilePath, ctx.res);
-        }
+        const {0: repositoryName, 1: filePath} = ctx.params;
+        const repositoryPath = path.join(GIT.ROOT, repositoryName);
+        const {statusCode, body, headers} = await Service.file(repositoryPath, filePath);
+        ctx.response.set(headers);
+        ctx.response.body = body;
+        ctx.response.status = statusCode;
     });
-};
+}

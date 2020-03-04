@@ -1,4 +1,3 @@
-import {SERVER} from '../../CONFIG';
 import {Middleware} from 'koa';
 
 export default (): Middleware =>
@@ -12,7 +11,7 @@ export default (): Middleware =>
         catch (e)
         {
             ctx.response.status = 500;
-            SERVER.ERROR_LOGGER(e);
+            console.error(e);
         }
     };
 }
