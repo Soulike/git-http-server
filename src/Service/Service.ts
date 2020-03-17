@@ -28,11 +28,11 @@ export async function file(repositoryPath: string, filePath: string): Promise<Se
     });
 }
 
-export async function advertise(repositoryPath: string, service: string): Promise<ServiceResponse<string | void>>
+export async function advertise(repositoryPath: string, service: string): Promise<ServiceResponse<string>>
 {
     const RPCCallOutput = await doAdvertiseRPCCall(repositoryPath, service);
 
-    return new ServiceResponse<string | void>(200, {
+    return new ServiceResponse(200, {
         'Content-Type': `application/x-${service}-advertisement`,
     }, generateRefsServiceResponse(service, RPCCallOutput));
 }
